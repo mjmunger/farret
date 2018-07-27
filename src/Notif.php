@@ -35,9 +35,11 @@ class Notif
         $this->addHook('DATE', 'getDate');
     }
 
-    public function setTemplateDirectory($directory) {
-
-        if(file_exists($directory) == false) return false;
+    public function setTemplateDirectory($directory)
+    {
+        if (file_exists($directory) == false) {
+            return false;
+        }
 
         $this->templateDirectory = $directory;
         return file_exists($this->templateDirectory);
@@ -49,20 +51,27 @@ class Notif
      * @throws Exception
      */
 
-    public function loadTemplate($template) {
-
+    public function loadTemplate($template)
+    {
         $targetTemplate = $this->templateDirectory . "$template.html";
 
-        if(file_exists($this->templateDirectory) == false) throw new Exception("Template directory not set!");
-        if(file_exists($targetTemplate)          == false) throw new Exception("Requested template does not exist in $targetTemplate");
-        if(is_readable($targetTemplate)          == false) throw new Exception("Requested template is not readable ($targetTemplate)");
+        if (file_exists($this->templateDirectory) == false) {
+            throw new Exception("Template directory not set!");
+        }
+        if (file_exists($targetTemplate)          == false) {
+            throw new Exception("Requested template does not exist in $targetTemplate");
+        }
+        if (is_readable($targetTemplate)          == false) {
+            throw new Exception("Requested template is not readable ($targetTemplate)");
+        }
 
         $this->template = file_get_contents($targetTemplate);
 
         return strlen($this->template) > 0;
     }
 
-    public function setFromName($name) {
+    public function setFromName($name)
+    {
         $this->fromName = $name;
     }
 
@@ -73,17 +82,21 @@ class Notif
      * @throws Exception
      */
 
-    public function setFromAddress($email) {
+    public function setFromAddress($email)
+    {
         $email = filter_var($email, FILTER_VALIDATE_EMAIL);
 
-        if($email == false) throw new Exception("$email is not a valid email address!");
+        if ($email == false) {
+            throw new Exception("$email is not a valid email address!");
+        }
 
         $this->fromAddress = $email;
 
         return true;
     }
 
-    public function setSubjectTemplate($subject) {
+    public function setSubjectTemplate($subject)
+    {
         $this->subjectTemplate = $subject;
     }
 
@@ -93,7 +106,8 @@ class Notif
      * @param $replace
      */
 
-    public function addFart($find, $replace) {
+    public function addFart($find, $replace)
+    {
         $this->fartDictionary[$find] = $replace;
     }
 
@@ -103,39 +117,45 @@ class Notif
      * @throws Exception
      */
 
-    public function getTemplateTags() {
-        if(strlen($this->template) == 0) throw new Exception("Template not set!");
+    public function getTemplateTags()
+    {
+        if (strlen($this->template) == 0) {
+            throw new Exception("Template not set!");
+        }
         return $this->getTags($this->template);
     }
 
-    public function getBodyTags() {
+    public function getBodyTags()
+    {
         return $this->getTags($this->body);
     }
 
-    public function getTags($body) {
-
+    public function getTags($body)
+    {
         $matches = [];
-        preg_match_all($this->tagPattern,$body,$matches,PREG_PATTERN_ORDER);
+        preg_match_all($this->tagPattern, $body, $matches, PREG_PATTERN_ORDER);
         return $matches[0];
     }
 
-    public function getHooks($body) {
+    public function getHooks($body)
+    {
         $matches = [];
-        preg_match_all($this->hookPattern,$body,$matches,PREG_PATTERN_ORDER);
+        preg_match_all($this->hookPattern, $body, $matches, PREG_PATTERN_ORDER);
         return $matches[0];
-
     }
 
-    public function makeTag($find) {
+    public function makeTag($find)
+    {
         return sprintf("{{%s}}", strtoupper($find));
     }
 
-    public function matchFind($tag, $find) {
+    public function matchFind($tag, $find)
+    {
         //Remove spaces
-        $tag = str_replace(" ", '',$tag);
+        $tag = str_replace(" ", '', $tag);
         //Decorate the find
         $find = $this->makeTag($find);
-        return (strcmp($tag,$find) === 0);
+        return (strcmp($tag, $find) === 0);
     }
 
     /**
@@ -143,38 +163,45 @@ class Notif
      * @throws Exception
      */
 
-    private function doFart($body) {
+    private function doFart($body)
+    {
         $tags = $this->getTemplateTags();
-        foreach($tags as $tag) {
-            foreach($this->fartDictionary as $find => $replace) {
-                if($this->matchFind($tag,$find)) $body = str_replace($tag, $replace, $body);
+        foreach ($tags as $tag) {
+            foreach ($this->fartDictionary as $find => $replace) {
+                if ($this->matchFind($tag, $find)) {
+                    $body = str_replace($tag, $replace, $body);
+                }
             }
         }
         $tags = $this->getBodyTags();
 
-        if(count($tags) > 0) $this->doFart($this->body);
+        if (count($tags) > 0) {
+            $this->doFart($this->body);
+        }
 
         return $body;
-
     }
 
-    public function render() {
+    public function render()
+    {
         $this->body = $this->doFart($this->template);
     }
 
-    public function addHook($hook, $callback) {
+    public function addHook($hook, $callback)
+    {
         $this->hooks[$hook] = $callback;
     }
 
-    public function getLabel($subject) {
+    public function getLabel($subject)
+    {
         $matches = [];
 
-        switch($this->getTagType($subject)) {
+        switch ($this->getTagType($subject)) {
             case 'tag':
-                preg_match($this->tagPattern, $subject,$matches);
+                preg_match($this->tagPattern, $subject, $matches);
                 break;
             case 'hook':
-                preg_match($this->hookPattern, $subject,$matches);
+                preg_match($this->hookPattern, $subject, $matches);
                 break;
             default:
                 return false;
@@ -183,9 +210,14 @@ class Notif
         return $matches[1];
     }
 
-    public function getTagType($tag) {
-        if(preg_match($this->tagPattern  , $tag) > 0) return 'tag';
-        if(preg_match($this->hookPattern , $tag) > 0) return 'hook';
+    public function getTagType($tag)
+    {
+        if (preg_match($this->tagPattern, $tag) > 0) {
+            return 'tag';
+        }
+        if (preg_match($this->hookPattern, $tag) > 0) {
+            return 'hook';
+        }
         return false;
     }
 
@@ -195,15 +227,15 @@ class Notif
      * @throws Exception
      */
 
-    public function renderHook($hook) {
-
+    public function renderHook($hook)
+    {
         $args = [];
 
         $hook = $this->getLabel($hook);
 
         //1. Check for arguments
-        if(strpos($hook, "|") > 0) {
-            $buffer = explode("|",$hook);
+        if (strpos($hook, "|") > 0) {
+            $buffer = explode("|", $hook);
             $hook   = array_shift($buffer);
             $args   = $buffer;
         }
@@ -211,26 +243,31 @@ class Notif
         //2. Lookup the callback in the hooks dictionary.
         $callback = $this->hooks[$hook];
 
-        if(method_exists($this, $callback) == false) throw new Exception("Hook method does not exist! Cannot execute $callback in " . __FILE__ . ":" .  __LINE__);
+        if (method_exists($this, $callback) == false) {
+            throw new Exception("Hook method does not exist! Cannot execute $callback in " . __FILE__ . ":" .  __LINE__);
+        }
 
         return (count($args) == 0 ? $this->$callback() : $this->$callback($args));
-
     }
 
-    public function getDate($formatArray) {
+    public function getDate($formatArray)
+    {
         $now = new \DateTime();
         return $now->format($formatArray[0]);
     }
 
-    public function getCurrentMonth() {
+    public function getCurrentMonth()
+    {
         return $this->getDate(["m"]);
     }
 
-    public function getCurrentDay() {
+    public function getCurrentDay()
+    {
         return $this->getDate(["d"]);
     }
 
-    public function getCurrentYear() {
+    public function getCurrentYear()
+    {
         return $this->getDate(["Y"]);
     }
 }
