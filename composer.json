@@ -1,0 +1,23 @@
+{
+    "name": "hphio/farret",
+    "type": "library",
+    "keywords": ["html", "email", "templates"],
+    "description": "Find And Recursively Replace Email Templates - generate email templates fast and easy.",
+    "homepage": "https://github.com/mjmunger/farret",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michael Munger",
+            "email": "mj@hph.io",
+            "homepage": "http://hph.io",
+            "role": "Developer"
+        }],
+    "autoload": {
+        "psr-4": {
+            "HPHIO\\Farret\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.0"
+    }
+}
