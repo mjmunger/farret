@@ -14,7 +14,7 @@ use \Exception;
 class Notif
 {
     private $tagPattern       = '/\{{2} {0,2}([A-Z]+) {0,2}\}{2}/';
-    private $hookPattern      = '/\{{1}\%{1} {0,2}([A-Z]+[\|[a-zA-Z0-9-]+]{0,}) {0,2}\%{1}\}{1}/';
+    private $hookPattern      = '/(?:{\%\s{0,})([A-Z]+)\s{0,}((\|(?:{{){0,1}[A-Za-z0-9-]+(?:}}){0,1}\s{0,}){0,})(?:\%})/';
 
     public $templateDirectory = null;
     public $template          = null;
@@ -37,7 +37,7 @@ class Notif
 
     public function setTemplateDirectory($directory)
     {
-        if (file_exists($directory) == false) {
+        if (file_exists($directory) === false) {
             return false;
         }
 
@@ -55,13 +55,13 @@ class Notif
     {
         $targetTemplate = $this->templateDirectory . "$template.html";
 
-        if (file_exists($this->templateDirectory) == false) {
+        if (file_exists($this->templateDirectory) === false) {
             throw new Exception("Template directory not set!");
         }
-        if (file_exists($targetTemplate)          == false) {
+        if (file_exists($targetTemplate)          === false) {
             throw new Exception("Requested template does not exist in $targetTemplate");
         }
-        if (is_readable($targetTemplate)          == false) {
+        if (is_readable($targetTemplate)          === false) {
             throw new Exception("Requested template is not readable ($targetTemplate)");
         }
 
@@ -86,7 +86,7 @@ class Notif
     {
         $email = filter_var($email, FILTER_VALIDATE_EMAIL);
 
-        if ($email == false) {
+        if ($email === false) {
             throw new Exception("$email is not a valid email address!");
         }
 
@@ -229,25 +229,24 @@ class Notif
 
     public function renderHook($hook)
     {
-        $args = [];
 
-        $hook = $this->getLabel($hook);
+        $TagFactory = new TagFactory();
+        $Tag = $TagFactory->getTag($hook);
+        $action = $Tag->getLabel();
 
-        //1. Check for arguments
-        if (strpos($hook, "|") > 0) {
-            $buffer = explode("|", $hook);
-            $hook   = array_shift($buffer);
-            $args   = $buffer;
+        //1. Replace template tags here.
+        if(count($Tag->getArgs()) > 0) {
+            $args = array_map([$this,'doFart'], $Tag->getArgs());
         }
 
         //2. Lookup the callback in the hooks dictionary.
-        $callback = $this->hooks[$hook];
+        $callback = $this->hooks[$action];
 
-        if (method_exists($this, $callback) == false) {
+        if (method_exists($this, $callback) === false) {
             throw new Exception("Hook method does not exist! Cannot execute $callback in " . __FILE__ . ":" .  __LINE__);
         }
 
-        return (count($args) == 0 ? $this->$callback() : $this->$callback($args));
+        return (count($Tag->getArgs()) == 0 ? $this->$callback() : $this->$callback($args));
     }
 
     public function getDate($formatArray)
@@ -270,4 +269,11 @@ class Notif
     {
         return $this->getDate(["Y"]);
     }
+
+    public function getArgs($hook) {
+        $Factory = new TagFactory();
+        $Tag = $Factory->getTag($hook);
+        return $Tag->getArgs();
+    }
+
 }

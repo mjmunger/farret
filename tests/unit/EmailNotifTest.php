@@ -248,32 +248,32 @@ class EmailNotifTest extends TestCase
      * @dataProvider providerTestGetTagLabel
      */
 
-    public function testGetTagType($subject, $label, $type) {
-        $Notif = new Notif();
-        $this->assertSame($type, $Notif->getTagType($subject));
-    }
+    public function testGetTagLabel($subject, $label, $expectedClass) {
+        $TagFactory = new TagFactory();
+        $Tag = $TagFactory->getTag($subject);
 
-    /**
-     * @param $subject
-     * @param $label
-     * @param $type
-     * @dataProvider providerTestGetTagLabel
-     */
+        if($expectedClass !== false) {
+            $this->assertInstanceOf($expectedClass, $Tag);
+        }
 
-    public function testGetTagLabel($subject, $label, $type) {
-        $Notif = new Notif();
-        $this->assertSame($label, $Notif->getLabel($subject));
+        if($expectedClass === false) {
+            $this->assertFalse($Tag);
+        }
+
+        if($label !== false) {
+            $this->assertSame($label, $Tag->getLabel());
+        }
     }
 
     public function providerTestGetTagLabel() {
-        return  [ [ '{{FIRSTNAME}}'   , 'FIRSTNAME'    , 'tag'  ]
-                , [ '{{FIRSTNAME }}'  , 'FIRSTNAME'    , 'tag'  ]
-                , [ '{{ FIRSTNAME}}'  , 'FIRSTNAME'    , 'tag'  ]
-                , [ '{{ FIRSTNAME }}' , 'FIRSTNAME'    , 'tag'  ]
-                , [ '{%FIRSTNAME%}'   , 'FIRSTNAME'    , 'hook' ]
-                , [ '{%FIRSTNAME %}'  , 'FIRSTNAME'    , 'hook' ]
-                , [ '{% FIRSTNAME%}'  , 'FIRSTNAME'    , 'hook' ]
-                , [ '{% FIRSTNAME %}' , 'FIRSTNAME'    , 'hook' ]
+        return  [ [ '{{FIRSTNAME}}'   , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateTag'  ]
+                , [ '{{FIRSTNAME }}'  , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateTag'  ]
+                , [ '{{ FIRSTNAME}}'  , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateTag'  ]
+                , [ '{{ FIRSTNAME }}' , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateTag'  ]
+                , [ '{%FIRSTNAME%}'   , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateHook' ]
+                , [ '{%FIRSTNAME %}'  , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateHook' ]
+                , [ '{% FIRSTNAME%}'  , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateHook' ]
+                , [ '{% FIRSTNAME %}' , 'FIRSTNAME'    , 'HPHIO\Farret\TemplateHook' ]
                 , [ 'FIRSTNAME %}'    , false          , false  ] //Invalid hook
                 , [ 'FIRSTNAME }}'    , false          , false  ] //Invalid tag
                 ];
@@ -289,10 +289,12 @@ class EmailNotifTest extends TestCase
         $month = $now->format('m');
         $day = $now->format('d');
         $ISODate = $now->format("Y-m-d");
+        $expectedHash = '0acf4539a14b3aa27deeb4cbdf6e989f'; // md5 of michael
 
         $Notif = new Notif();
         $Notif->setTemplateDirectory(__DIR__ . '/emails/');
         $Notif->loadTemplate('reset');
+        $Notif->addFart('FIRSTNAME','michael');
 
         $Notif->addHook('YEAR', 'getCurrentYear');
         $Notif->addHook('MONTH', 'getCurrentMonth');
@@ -305,6 +307,103 @@ class EmailNotifTest extends TestCase
         $this->assertSame($month,$Notif->renderHook("{% DATE|m %}"));
         $this->assertSame($year,$Notif->renderHook("{% DATE|Y %}"));
         $this->assertSame($ISODate,$Notif->renderHook("{% DATE|Y-m-d %}"));
+        //$this->assertSame($expectedHash, $Notif->renderHook("{% HASH|{{FIRSTNAME}} %}"));
 
     }
+
+    /**
+     * @param $hook
+     * @param $expectedArgCount
+     * @param $expectedArgs
+     * @dataProvider providerTestGetArgs
+     */
+    public function testGetArgs($hook, $expectedArgCount, $expectedArgs ) {
+        $Notif = new Notif();
+        $args = $Notif->getArgs($hook);
+
+        $this->assertCount($expectedArgCount, $args);
+
+        for($x = 0; $x < $expectedArgCount; $x++) {
+            $this->assertSame($expectedArgs[$x], $args[$x]);
+        }
+    }
+
+    public function providerTestGetArgs() {
+        $single = ['KMXZMMyNYfMbDNHTAEmr'];
+        $double = ['AvJyu', 'ztWXCbpngQPXZda'];
+        $triple = ['sbngIRWOvcMdrofCs','SEHEOqn','LcIzEEidYlXeF'];
+
+        $hook1 = '{% TEST|KMXZMMyNYfMbDNHTAEmr %}';
+        $hook2 = '{% TEST|AvJyu|ztWXCbpngQPXZda %}';
+        $hook3 = '{% TEST|sbngIRWOvcMdrofCs|SEHEOqn|LcIzEEidYlXeF %}';
+
+        return  [ [$hook1, count($single), $single ]
+                , [$hook2, count($double), $double ]
+                , [$hook3, count($triple), $triple ]
+                ];
+    }
+
+    /**
+     * @param $tag
+     * @param $expectedClass
+     * @dataProvider providerTestTagFactory
+     */
+    public function testTagFactory($tag, $expectedClass)
+    {
+        $TagFactory = new TagFactory();
+        $TagObject = $TagFactory->getTag($tag);
+
+        $this->assertInstanceOf($expectedClass, $TagObject);
+    }
+
+    public function providerTestTagFactory()
+    {
+        return  [ ['{{FIRSTNAME}}'                           , 'HPHIO\Farret\TemplateTag'  ]
+                , ['{{FIRSTNAME }}'                          , 'HPHIO\Farret\TemplateTag'  ]
+                , ['{{ FIRSTNAME}}'                          , 'HPHIO\Farret\TemplateTag'  ]
+                , ['{{ FIRSTNAME }}'                         , 'HPHIO\Farret\TemplateTag'  ]
+                , ['{{      FIRSTNAME      }}'               , 'HPHIO\Farret\TemplateTag'  ]
+                , ['{%FIRSTNAME%}'                           , 'HPHIO\Farret\TemplateHook' ]
+                , ['{%FIRSTNAME %}'                          , 'HPHIO\Farret\TemplateHook' ]
+                , ['{% FIRSTNAME%}'                          , 'HPHIO\Farret\TemplateHook' ]
+                , ['{% FIRSTNAME %}'                         , 'HPHIO\Farret\TemplateHook' ]
+                , ['{%      FIRSTNAME      %}'               , 'HPHIO\Farret\TemplateHook' ]
+                , [ '{% YEAR|arg1 %}'                        , 'HPHIO\Farret\TemplateHookWithArgs' ]
+                , [ '{% YEAR|arg1|arg2|arg3 %}'              , 'HPHIO\Farret\TemplateHookWithArgs' ]
+                , [ '{% YEAR|Y-m-d %}'                       , 'HPHIO\Farret\TemplateHookWithArgs' ]
+                , [ '{% HASH|{{FIRSTNAME}} %}'               , 'HPHIO\Farret\TemplateHookWithArgs' ]
+                , [ '{% HASH|{{FIRSTNAME}}|{{LASTNAME}} %}'  , 'HPHIO\Farret\TemplateHookWithArgs' ]
+                , [ '{% HASH|d %}'                           , 'HPHIO\Farret\TemplateHookWithArgs' ]
+                ];
+    }
+
+    /**
+     * @param $tag
+     * @param $expectedCount
+     * @param $expectedArray
+     * @dataProvider providerTestParseArgs
+     */
+
+    public function testParseArgs($tag, $expectedCount, $expectedArray) {
+        $TagFactory = new TagFactory();
+        $tag = $TagFactory->getTag($tag);
+
+        $this->assertCount($expectedCount, $tag->getArgs());
+
+        for($x = 0; $x < count($expectedArray); $x++) {
+            $this->assertSame($expectedArray[$x], $tag->getArgs()[$x]);
+        }
+
+    }
+
+    public function providerTestParseArgs() {
+        return  [ ['{% YEAR|arg1 %}'                        , 1, ['arg1']                          ]
+                , ['{% YEAR|arg1|arg2|arg3 %}'              , 3, ['arg1', 'arg2', 'arg3']          ]
+                , ['{% YEAR|Y-m-d %}'                       , 1, ['Y-m-d']                         ]
+                , ['{% HASH|{{FIRSTNAME}} %}'               , 1, ['{{FIRSTNAME}}']                 ]
+                , ['{% HASH|{{FIRSTNAME}}|{{LASTNAME}} %}'  , 2, ['{{FIRSTNAME}}', '{{LASTNAME}}'] ]
+                , ['{% DATE|d %}'                           , 1, ['d']                             ]
+                ];
+    }
+
 }

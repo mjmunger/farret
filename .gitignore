@@ -1,1 +1,6 @@
 composer.lock
+vendor/autoload.php vendor/bin vendor/composer vendor/doctrine vendor/monolog vendor/myclabs vendor/phar-io vendor/phpdocumentor vendor/phpspec vendor/phpunit vendor/psr vendor/sebastian vendor/theseer vendor/webmozart
+phpunit
+vendor
+.idea/
+.php_cs.cache
