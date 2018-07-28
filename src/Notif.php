@@ -33,6 +33,24 @@ class Notif
     public function __construct()
     {
         $this->addHook('DATE', 'getDate');
+        $this->addHook('HASH', 'hash');
+
+    }
+
+    public function setBody($body) {
+        $this->body = $body;
+    }
+
+    public function getBody() {
+        return $this->body;
+    }
+
+    public function setTemplate($template) {
+        $this->template = $template;
+    }
+
+    public function getTemplate() {
+        return $this->template;
     }
 
     public function setTemplateDirectory($directory)
@@ -60,9 +78,6 @@ class Notif
         }
         if (file_exists($targetTemplate)          === false) {
             throw new Exception("Requested template does not exist in $targetTemplate");
-        }
-        if (is_readable($targetTemplate)          === false) {
-            throw new Exception("Requested template is not readable ($targetTemplate)");
         }
 
         $this->template = file_get_contents($targetTemplate);
@@ -134,7 +149,16 @@ class Notif
     {
         $matches = [];
         preg_match_all($this->tagPattern, $body, $matches, PREG_PATTERN_ORDER);
-        return $matches[0];
+
+        $TagFactory = new TagFactory();
+        $buffer = [];
+
+        foreach($matches[0] as $match) {
+            $tag = $TagFactory->getTag($match);
+            $buffer[] = $tag;
+        }
+
+        return $buffer;
     }
 
     public function getHooks($body)
@@ -167,16 +191,20 @@ class Notif
     {
         $tags = $this->getTemplateTags();
         foreach ($tags as $tag) {
-            foreach ($this->fartDictionary as $find => $replace) {
-                if ($this->matchFind($tag, $find)) {
-                    $body = str_replace($tag, $replace, $body);
-                }
+
+            $tag->fart($this->fartDictionary);
+
+            if(strpos($body, $tag->getTag()) === false) {
+                continue;
             }
+
+            $body = str_replace($tag->getTag(), $tag->getReplacement(), $body);
         }
-        $tags = $this->getBodyTags();
+
+        $tags = $this->getTags($body);
 
         if (count($tags) > 0) {
-            $this->doFart($this->body);
+            $body = $this->doFart($body);
         }
 
         return $body;
@@ -192,35 +220,6 @@ class Notif
         $this->hooks[$hook] = $callback;
     }
 
-    public function getLabel($subject)
-    {
-        $matches = [];
-
-        switch ($this->getTagType($subject)) {
-            case 'tag':
-                preg_match($this->tagPattern, $subject, $matches);
-                break;
-            case 'hook':
-                preg_match($this->hookPattern, $subject, $matches);
-                break;
-            default:
-                return false;
-        }
-
-        return $matches[1];
-    }
-
-    public function getTagType($tag)
-    {
-        if (preg_match($this->tagPattern, $tag) > 0) {
-            return 'tag';
-        }
-        if (preg_match($this->hookPattern, $tag) > 0) {
-            return 'hook';
-        }
-        return false;
-    }
-
     /**
      * @param $hook
      * @return mixed
@@ -232,21 +231,22 @@ class Notif
 
         $TagFactory = new TagFactory();
         $Tag = $TagFactory->getTag($hook);
+        $Tag->fart($this->fartDictionary);
         $action = $Tag->getLabel();
 
-        //1. Replace template tags here.
-        if(count($Tag->getArgs()) > 0) {
-            $args = array_map([$this,'doFart'], $Tag->getArgs());
+        //2. Lookup the callback in the hooks dictionary.
+
+        if(isset($this->hooks[$action]) === false) {
+            throw new Exception('The callback you requested is not registered in the notification hooks.');
         }
 
-        //2. Lookup the callback in the hooks dictionary.
         $callback = $this->hooks[$action];
 
         if (method_exists($this, $callback) === false) {
-            throw new Exception("Hook method does not exist! Cannot execute $callback in " . __FILE__ . ":" .  __LINE__);
+            throw new Exception("Hook method does not exist! Cannot execute $callback.");
         }
 
-        return (count($Tag->getArgs()) == 0 ? $this->$callback() : $this->$callback($args));
+        return (count($Tag->getArgs()) == 0 ? $this->$callback() : $this->$callback($Tag->getArgs()));
     }
 
     public function getDate($formatArray)
@@ -274,6 +274,15 @@ class Notif
         $Factory = new TagFactory();
         $Tag = $Factory->getTag($hook);
         return $Tag->getArgs();
+    }
+
+    public function hash($args) {
+        $buffer = '';
+        for($x = 0; $x < count($args); $x++ ) {
+            $buffer = md5($buffer.$args[$x]);
+        }
+
+        return $buffer;
     }
 
 }

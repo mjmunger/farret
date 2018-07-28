@@ -23,4 +23,17 @@ class TemplateHook extends AbstractTag
     public function setup() {
         $this->type = AbstractTag::HOOK;
     }
+
+    public function fart($dictionary) {
+
+    }
+
+    public function getTag() {
+        return $this->tag;
+    }
+
+    public function getReplacement()
+    {
+        return $this->replacement;
+    }
 }

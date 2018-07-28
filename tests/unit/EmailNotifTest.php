@@ -18,7 +18,7 @@ class EmailNotifTest extends TestCase
      * @param $directory
      * @param $expectedExistence
      * @dataProvider providerTestTemplateDirectory
-     * @covers Notif::$templateDirectory
+     * @covers HPHIO\Farret\Notif::setTemplateDirectory
      */
 
     public function testTemplateDirectory($directory, $expectedExistence) {
@@ -45,13 +45,21 @@ class EmailNotifTest extends TestCase
      * @param $expectedExistence
      * @dataProvider providerTestLoadTemplate
      * @throws Exception
-     * @covers Notif::loadTemplate()
+     * @covers HPHIO\Farret\Notif::loadTemplate()
      */
 
-    public function testLoadTemplate($template, $expectedExistence) {
+    public function testLoadTemplate($setTemplateDirectory, $template, $expectedExistence, $expectException) {
 
         $Notif = new Notif();
-        $Notif->setTemplateDirectory(__DIR__ . '/emails/');
+
+        if($setTemplateDirectory) {
+            $Notif->setTemplateDirectory(__DIR__ . '/emails/');
+        }
+
+        if($expectException) {
+            $this->expectException('Exception');
+        }
+
         $result = $Notif->loadTemplate($template);
         $this->assertSame($result, $expectedExistence);
 
@@ -60,7 +68,9 @@ class EmailNotifTest extends TestCase
     }
 
     public function providerTestLoadTemplate() {
-        return  [ [ 'reset'      , true ]
+                   //Set the template directory? //template to load  //Expected Existence  ExpectExeption?
+        return  [ [ true                       , 'reset'           , true                , false ]
+                , [ false                      , 'reset'           , true                , true  ]
                 ];
     }
 
@@ -133,8 +143,8 @@ class EmailNotifTest extends TestCase
 
     /**
      * @throws Exception
-     * @covers Notif::getTemplateTags()
-     * @covers Notif::getTags()
+     * @covers HPHIO\Farret\Notif::getTemplateTags()
+     * @covers HPHIO\Farret\Notif::getTags()
      */
 
     public function testGetTemplateTags() {
@@ -142,14 +152,57 @@ class EmailNotifTest extends TestCase
         $Notif->setTemplateDirectory(__DIR__ . '/emails/');
         $Notif->loadTemplate('reset');
 
-        $Tags = $Notif->getTemplateTags();
+        $TemplateTags = $Notif->getTemplateTags();
 
-        $this->assertCount(5,$Tags);
+        $this->assertCount(5,$TemplateTags);
+
+        unset($Notif);
+
+        $Notif = new Notif();
+        $this->expectException('Exception');
+        $Notif->getTemplateTags();
+    }
+
+    /**
+     * @covers HPHIO\Farret\Notif::setBody()
+     * @covers HPHIO\Farret\Notif::getBody()
+     */
+
+    public function testGetSetBody() {
+        $Notif = new Notif();
+        $Notif->setBody('BZjPUDGSMj');
+        $this->assertSame('BZjPUDGSMj', $Notif->getBody());
+    }
+
+    public function testGetSetTemplate() {
+        $Notif = new Notif();
+        $Notif->setTemplate('YBvptJDHFMEODln');
+        $this->assertSame('YBvptJDHFMEODln', $Notif->getTemplate());
     }
 
     /**
      * @throws Exception
-     * @covers Notif::render()
+     */
+
+    public function testGetBodyTags() {
+        $Notif = new Notif();
+        $Notif->setTemplateDirectory(__DIR__ . '/emails/');
+        $Notif->loadTemplate('reset');
+
+        $Notif->setBody($Notif->getTemplate());
+
+        $BodyTags = $Notif->getBodyTags();
+
+        $this->assertCount(5,$BodyTags);
+
+        unset($Notif);
+
+    }
+
+    /**
+     * @throws Exception
+     * @covers HPHIO\Farret\Notif::render()
+     * @covers HPHIO\Farret\Notif::doFart()
      */
 
     public function testRender() {
@@ -162,7 +215,7 @@ class EmailNotifTest extends TestCase
         $Notif->addFart("LINK"             , "FxyC");
         $Notif->addFart("ANOTHERTAG"       , "mGYMmJoUDMoxUaKzX");
         $Notif->addFart("MISSINGLEFTSPACE" , "hdUxQxBiS");
-        $Notif->addFart("MISSINGRIGHTSPACE", "WKKGiHXzqLesjwooBX");
+        $Notif->addFart("MISSINGRIGHTSPACE", "WKKGiHXzqLesjwooBX{{ FIRSTNAME }}");
 
         $Tags = $Notif->getTemplateTags();
         $this->assertCount(5,$Tags);
@@ -193,22 +246,22 @@ class EmailNotifTest extends TestCase
     }
 
     public function providerTestMatchFind() {
-        return  [ [ '{{FIRSTNAME}}'   , 'FIRSTNAME', true  ]
-                , [ '{{FIRSTNAME }}'  , 'FIRSTNAME', true  ]
-                , [ '{{ FIRSTNAME}}'  , 'FIRSTNAME', true  ]
-                , [ '{{ FIRSTNAME }}' , 'FIRSTNAME', true  ]
-                , [ '{{ FIRSTNAME }'  , 'FIRSTNAME', false ]
-                , [ '{ FIRSTNAME }}'  , 'FIRSTNAME', false ]
-                , [ '{FIRSTNAME }}'   , 'FIRSTNAME', false ]
-                , [ '{{FIRSTNAME}'    , 'FIRSTNAME', false ]
-                , [ '{{ FIRSTNAME }}' , 'IRSTNAME' , false ]
-                , [ '{{ FIRSTNAME }}' , 'FIRSTNAM' , false ]
+        return  [ [ '{{FIRSTNAME}}'   , 'FIRSTNAME' , true  ]
+                , [ '{{FIRSTNAME }}'  , 'FIRSTNAME' , true  ]
+                , [ '{{ FIRSTNAME}}'  , 'FIRSTNAME' , true  ]
+                , [ '{{ FIRSTNAME }}' , 'FIRSTNAME' , true  ]
+                , [ '{{ FIRSTNAME }'  , 'FIRSTNAME' , false ]
+                , [ '{ FIRSTNAME }}'  , 'FIRSTNAME' , false ]
+                , [ '{FIRSTNAME }}'   , 'FIRSTNAME' , false ]
+                , [ '{{FIRSTNAME}'    , 'FIRSTNAME' , false ]
+                , [ 'FIRSTNAME }}'    , 'FIRSTNAME' , false ]
+                , [ '{{ FIRSTNAME'    , 'FIRSTNAME' , false ]
                 ];
     }
 
     /**
      * @throws Exception
-     * @covers Notif::getHooks()
+     * @covers HPHIO\Farret\Notif::getHooks()
      */
 
     public function testGetHooks() {
@@ -289,7 +342,7 @@ class EmailNotifTest extends TestCase
         $month = $now->format('m');
         $day = $now->format('d');
         $ISODate = $now->format("Y-m-d");
-        $expectedHash = '0acf4539a14b3aa27deeb4cbdf6e989f'; // md5 of michael
+
 
         $Notif = new Notif();
         $Notif->setTemplateDirectory(__DIR__ . '/emails/');
@@ -307,8 +360,21 @@ class EmailNotifTest extends TestCase
         $this->assertSame($month,$Notif->renderHook("{% DATE|m %}"));
         $this->assertSame($year,$Notif->renderHook("{% DATE|Y %}"));
         $this->assertSame($ISODate,$Notif->renderHook("{% DATE|Y-m-d %}"));
-        //$this->assertSame($expectedHash, $Notif->renderHook("{% HASH|{{FIRSTNAME}} %}"));
 
+        //Exceptions tested below.
+        $this->expectException('Exception');
+        $this->expectExceptionMessage('The callback you requested is not registered in the notification hooks.');
+        $Notif->renderHook("{% NELTVJLWRNRRW|Y-m-d %}");
+
+    }
+
+    public function testHookMethodDoesNotExist() {
+
+        $Notif = new Notif();
+        $Notif->addHook('NELTVJLWRNRRW', 'nonExistentMethod');
+        $this->expectException('Exception');
+        $this->expectExceptionMessage('Hook method does not exist! Cannot execute nonExistentMethod.');
+        $Notif->renderHook("{% NELTVJLWRNRRW|Y-m-d %}");
     }
 
     /**
@@ -405,5 +471,63 @@ class EmailNotifTest extends TestCase
                 , ['{% DATE|d %}'                           , 1, ['d']                             ]
                 ];
     }
+
+    /**
+     * @dataProvider providerTestMatchFind
+     */
+    public function testTemplateFart($tag, $find, $expectedMatch) {
+        $expectedReplacement = 'itjazbVSgSBSsxh';
+
+        $TagFactory = new TagFactory();
+        $Tag = $TagFactory->getTag($tag);
+
+        if($expectedMatch === false) {
+            $this->assertFalse($Tag);
+            return;
+        }
+
+        $dictionary = [ 'FIRSTNAME' =>  $expectedReplacement];
+        $result = $Tag->fart($dictionary);
+
+        $this->assertSame($expectedMatch, $result);
+
+            $this->assertSame($expectedReplacement, $Tag->getReplacement());
+    }
+
+    /**
+     * @param $dictionaryKey
+     * @param $dictionaryValue
+     * @param $expectedReplacement
+     * @throws Exception
+     * @dataProvider providerTestArgsWithTags
+     */
+
+    public function testArgsWithTags($dictionary, $expectedReplacement, $functionArgs) {
+        $Notif = new Notif();
+
+        foreach($dictionary as $find => $replace) {
+            $Notif->addFart($find, $replace);
+        }
+
+        $args = "|" . implode("|", $functionArgs);
+
+        $tag = sprintf("{%% HASH%s %%}", $args);
+
+        $this->assertSame($expectedReplacement, $Notif->renderHook($tag));
+    }
+
+    public function providerTestArgsWithTags() {
+
+        $dictionary1 = [ 'FIRSTNAME' => 'michael' ];
+        $dictionary2 = [ 'FIRSTNAME' => 'michael', 'LASTNAME' => 'munger' ];
+        $dictionary3 = [ 'FIRSTNAME' => 'michael', 'LASTNAME' => 'munger', 'FOOBAR' => 'vVUsBuUDulZMqJgltPFr' ];
+
+        return  [ [ $dictionary1, '0acf4539a14b3aa27deeb4cbdf6e989f' , ['{{FIRSTNAME}}'] ]
+                , [ $dictionary2, '360f28e78e52106f47e85d1b8f48a37d' , ['{{FIRSTNAME}}', '{{LASTNAME}}'] ]
+                , [ $dictionary2, '662feb17e595bd48d0b6385bac2c4e70' , ['{{FIRSTNAME}}', '{{LASTNAME}}', 'ExUxvqdyFC'] ]
+                , [ $dictionary3, '0ca1a7da21154f04149d05a73abb844d' , ['{{FIRSTNAME}}', '{{LASTNAME}}', 'ExUxvqdyFC', '{{FOOBAR}}' ] ]
+                ];
+    }
+
 
 }

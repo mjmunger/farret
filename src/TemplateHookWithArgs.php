@@ -13,6 +13,8 @@ namespace HPHIO\Farret;
 class TemplateHookWithArgs extends AbstractTag
 {
 
+    protected $fartDictionary = [];
+
     public function setup()
     {
         $this->type = AbstractTag::HOOK;
@@ -43,5 +45,39 @@ class TemplateHookWithArgs extends AbstractTag
         $result = (preg_match_all($this->pattern, $this->tag,$matches, PREG_SET_ORDER) !== false);
 
         return ($result ? $matches[0][1] : false);
+    }
+
+    public function fart($dictionary) {
+        $TagFactory = new TagFactory();
+
+        for($x = 0; $x < count($this->args); $x++) {
+            $Tag = $TagFactory->getTag($this->args[$x]);
+
+            //If this argument is NOT a tag like {{FIRSTNAME}}
+            if($Tag === false) {
+                foreach($dictionary as $find => $replace) {
+                    $this->args[$x] = str_replace($find, $replace, $this->args[$x]);
+                }
+                continue;
+            }
+
+            //This is some sort of tag. Use the Tag class to do the replacement.
+            $Tag->fart($dictionary);
+            $this->args[$x] = $Tag->getReplacement();
+        }
+    }
+
+    public function getTag()
+    {
+        $pattern = '/(?:{%)\s{0,}([A-Z]+)\s{0,}\|.*\s{0,}(?:%})/m';
+        $matches = [];
+        $result = (preg_match_all($pattern, $this->tag,$matches, PREG_SET_ORDER) !== false);
+
+        return ($result ? $matches[0][1] : false);
+    }
+
+    public function getReplacement()
+    {
+        return $this->replacement;
     }
 }

@@ -15,6 +15,7 @@ abstract class AbstractTag
     protected $pattern;
     protected $tag;
     protected $args = [];
+    protected $replacement = null;
 
     const TAG  = 0;
     const HOOK = 1;
@@ -32,4 +33,7 @@ abstract class AbstractTag
 
     abstract function getLabel();
     abstract function setup();
+    abstract function fart($dictionary);
+    abstract function getTag();
+    abstract function getReplacement();
 }

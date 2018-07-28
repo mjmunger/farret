@@ -28,4 +28,25 @@ class TemplateTag extends AbstractTag
     {
         // TODO: Implement getArgs() method.
     }
+
+    public function fart($dictionary) {
+        $label = $this->getLabel();
+        foreach($dictionary as $find => $replace) {
+            if(strcmp($find,$label) === 0) {
+                $this->replacement = $replace;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function getTag() {
+        return $this->tag;
+    }
+
+    public function getReplacement()
+    {
+        return $this->replacement;
+    }
 }
