@@ -187,9 +187,9 @@ class Notif
      * @throws Exception
      */
 
-    private function doFart($body)
+    private function doFart($body, $tags)
     {
-        $tags = $this->getTemplateTags();
+
         foreach ($tags as $tag) {
 
             $tag->fart($this->fartDictionary);
@@ -204,7 +204,7 @@ class Notif
         $tags = $this->getTags($body);
 
         if (count($tags) > 0) {
-            $body = $this->doFart($body);
+            $body = $this->doFart($body, $tags);
         }
 
         return $body;
@@ -212,7 +212,7 @@ class Notif
 
     public function render()
     {
-        $this->body = $this->doFart($this->template);
+        $this->body = $this->doFart($this->template, $this->getTemplateTags());
     }
 
     public function addHook($hook, $callback)
