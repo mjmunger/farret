@@ -195,7 +195,9 @@ class Notif
             $tag->fart($this->fartDictionary);
 
             if(strpos($body, $tag->getTag()) === false) {
+                // @codeCoverageIgnoreStart
                 continue;
+                // @codeCoverageIgnoreEnd
             }
 
             $body = str_replace($tag->getTag(), $tag->getReplacement(), $body);
@@ -210,9 +212,41 @@ class Notif
         return $body;
     }
 
+    /**
+     * @throws Exception
+     */
+
     public function render()
     {
         $this->body = $this->doFart($this->template, $this->getTemplateTags());
+        $this->body = $this->renderAllHooks($this->body);
+    }
+
+    /**
+     * @param $body
+     * @return mixed
+     * @throws Exception
+     *
+     */
+
+    public function renderAllHooks($body) {
+        $hooks = $this->getHooks($body);
+        $TagFactory = new TagFactory();
+        $tags = [];
+
+        foreach($hooks as $hook) {
+            $Tag = $TagFactory->getTag($hook);
+            $Tag->setReplacement($this->renderHook($hook));
+            $body = str_replace($hook, $Tag->getReplacement(), $body);
+        }
+
+        // Hooks are not recursive now. But they could be if we uncomment this.
+        // $hooks = $this->getHooks($body);
+        // if(count($hooks) > 0) {
+        //     $this->renderAllHooks($body);
+        // }
+
+        return $body;
     }
 
     public function addHook($hook, $callback)

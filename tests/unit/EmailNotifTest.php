@@ -211,10 +211,14 @@ class EmailNotifTest extends TestCase
         $Notif->setTemplateDirectory(__DIR__ . '/emails/');
         $Notif->loadTemplate('reset');
 
+        $Notif->addHook('YEAR'  , 'getCurrentYear');
+        $Notif->addHook('MONTH' , 'getCurrentMonth');
+        $Notif->addHook('DAY'   , 'getCurrentDay');
+
         $Notif->addFart("FIRSTNAME"        , "RrVkbeG");
         $Notif->addFart("LINK"             , "FxyC");
         $Notif->addFart("ANOTHERTAG"       , "mGYMmJoUDMoxUaKzX");
-        $Notif->addFart("MISSINGLEFTSPACE" , "hdUxQxBiS");
+        $Notif->addFart("MISSINGLEFTSPACE" , "{{FIRSTNAME}}hdUxQxBiS");
         $Notif->addFart("MISSINGRIGHTSPACE", "WKKGiHXzqLesjwooBX{{ FIRSTNAME }}");
 
         $Tags = $Notif->getTemplateTags();
@@ -228,8 +232,8 @@ class EmailNotifTest extends TestCase
         $this->assertNotFalse(strpos($Notif->body, "RrVkbeG"), "RrVkbeG was not found in the body of the resulting email");
         $this->assertNotFalse(strpos($Notif->body, "FxyC"), "FxyC was not found in the body of the resulting email");
         $this->assertNotFalse(strpos($Notif->body, "mGYMmJoUDMoxUaKzX"), "mGYMmJoUDMoxUaKzX was not found in the body of the resulting email");
-        $this->assertNotFalse(strpos($Notif->body, "hdUxQxBiS"), "hdUxQxBiS was not found in the body of the resulting email");
-        $this->assertNotFalse(strpos($Notif->body, "WKKGiHXzqLesjwooBX"), "WKKGiHXzqLesjwooBX was not found in the body of the resulting email");
+        $this->assertNotFalse(strpos($Notif->body, "RrVkbeGhdUxQxBiS"), "RrVkbeGhdUxQxBiS was not found in the body of the resulting email");
+        $this->assertNotFalse(strpos($Notif->body, "WKKGiHXzqLesjwooBXRrVkbeG"), "WKKGiHXzqLesjwooBXRrVkbeG was not found in the body of the resulting email");
 
     }
 
@@ -256,8 +260,11 @@ class EmailNotifTest extends TestCase
                 , [ '{{FIRSTNAME}'    , 'FIRSTNAME' , false ]
                 , [ 'FIRSTNAME }}'    , 'FIRSTNAME' , false ]
                 , [ '{{ FIRSTNAME'    , 'FIRSTNAME' , false ]
+                , [ '{{ LASTNAME }}'  , 'LASTNAME'  , true  ]
                 ];
     }
+
+
 
     /**
      * @throws Exception
@@ -289,7 +296,7 @@ class EmailNotifTest extends TestCase
         $hookCount++;
         $this->assertCount($hookCount, $Notif->hooks);
 
-        $Notif->addHook('DAY', 'getCurrentDat');
+        $Notif->addHook('DAY', 'getCurrentDay');
         $hookCount++;
         $this->assertCount($hookCount, $Notif->hooks);
     }
@@ -473,9 +480,9 @@ class EmailNotifTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestMatchFind
+     * @dataProvider providerTestTemplateFart
      */
-    public function testTemplateFart($tag, $find, $expectedMatch) {
+    public function testTemplateFart($tag, $find, $expectedMatch, $inDictionary) {
         $expectedReplacement = 'itjazbVSgSBSsxh';
 
         $TagFactory = new TagFactory();
@@ -489,9 +496,26 @@ class EmailNotifTest extends TestCase
         $dictionary = [ 'FIRSTNAME' =>  $expectedReplacement];
         $result = $Tag->fart($dictionary);
 
-        $this->assertSame($expectedMatch, $result);
+        $this->assertSame($inDictionary, $result);
 
+        if($inDictionary === true) {
             $this->assertSame($expectedReplacement, $Tag->getReplacement());
+        }
+    }
+
+    public function providerTestTemplateFart() {
+        return  [ [ '{{FIRSTNAME}}'   , 'FIRSTNAME' , true  , true  ]
+            , [ '{{FIRSTNAME }}'  , 'FIRSTNAME'     , true  , true  ]
+            , [ '{{ FIRSTNAME}}'  , 'FIRSTNAME'     , true  , true  ]
+            , [ '{{ FIRSTNAME }}' , 'FIRSTNAME'     , true  , true  ]
+            , [ '{{ FIRSTNAME }'  , 'FIRSTNAME'     , false , true  ]
+            , [ '{ FIRSTNAME }}'  , 'FIRSTNAME'     , false , true  ]
+            , [ '{FIRSTNAME }}'   , 'FIRSTNAME'     , false , true  ]
+            , [ '{{FIRSTNAME}'    , 'FIRSTNAME'     , false , true  ]
+            , [ 'FIRSTNAME }}'    , 'FIRSTNAME'     , false , true  ]
+            , [ '{{ FIRSTNAME'    , 'FIRSTNAME'     , false , true  ]
+            , [ '{{ LASTNAME }}'  , 'LASTNAME'      , true  , false ]
+        ];
     }
 
     /**
@@ -529,5 +553,77 @@ class EmailNotifTest extends TestCase
                 ];
     }
 
+    /**
+     * @param $tag
+     * @dataProvider providerTestGetTag
+     */
+
+    public function testGetTag($tag) {
+        $TagFactory = new TagFactory($tag);
+        $Tag = $TagFactory->getTag($tag);
+        $this->assertSame($tag, $Tag->getTag());
+    }
+
+    public function providerTestGetTag() {
+        return  [ ["{% YEAR %}"                ]
+                , ["{% YEAR|ARG1 %}"           ]
+                , ["{% YEAR|ARG1|ARG2 %}"      ]
+                , ["{% YEAR|ARG1|ARG2|ARG3 %}" ]
+                , ["{{YEAR}}"                  ]
+                , ["{{YEAR }}"                 ]
+                , ["{{ YEAR }}"                ]
+                ];
+    }
+
+    /**
+     * @dataProvider providerTestSetReplacement
+     */
+
+    public function testGetSetReplacement($tag) {
+        $TagFactory = new TagFactory();
+        $replacement = 'JJDyALQqbtDmAPtY';
+        $Tag = $TagFactory->getTag($tag);
+        $Tag->setReplacement($replacement);
+        $this->assertSame($Tag->getReplacement(), $replacement);
+    }
+
+    public function providerTestSetReplacement() {
+        return  [ [ '{{FIRSTNAME}}'   ]
+                , [ '{% YEAR %}'      ]
+                , [ '{% YEAR|arg1 %}' ]
+                ];
+    }
+
+    /**
+     * @throws Exception
+     */
+
+    public function testRenderAllHooks() {
+        $Notif = new Notif();
+        $Notif->setTemplateDirectory(__DIR__ . '/emails/');
+        $Notif->loadTemplate('reset');
+        $Notif->setBody($Notif->getTemplate());
+
+
+        $Notif->addHook('YEAR'  , 'getCurrentYear');
+        $Notif->addHook('MONTH' , 'getCurrentMonth');
+        $Notif->addHook('DAY'   , 'getCurrentDay');
+
+        $hooks = $Notif->getHooks($Notif->getTemplate());
+
+        $this->assertCount(3,$hooks);
+        $body = $Notif->renderAllHooks($Notif->getBody());
+
+        $this->assertNotSame(0, strlen($body), "Notif::renderAllHooks is returning nothing?");
+
+        $hooks = $Notif->getHooks($body);
+        $this->assertCount(0,$hooks);
+
+        $now = new \DateTime();
+        $date = $now->format('Y-m-d');
+
+        $this->assertTrue(stripos($body,$date) > 0);
+
+    }
 
 }

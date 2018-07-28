@@ -69,11 +69,12 @@ class TemplateHookWithArgs extends AbstractTag
 
     public function getTag()
     {
-        $pattern = '/(?:{%)\s{0,}([A-Z]+)\s{0,}\|.*\s{0,}(?:%})/m';
-        $matches = [];
-        $result = (preg_match_all($pattern, $this->tag,$matches, PREG_SET_ORDER) !== false);
-
-        return ($result ? $matches[0][1] : false);
+//        $pattern = '/(?:{%)\s{0,}([A-Z]+)\s{0,}\|.*\s{0,}(?:%})/m';
+//        $matches = [];
+//        $result = (preg_match_all($pattern, $this->tag,$matches, PREG_SET_ORDER) !== false);
+//
+//        return ($result ? $matches[0][1] : false);
+        return $this->tag;
     }
 
     public function getReplacement()

@@ -24,10 +24,10 @@ class TemplateTag extends AbstractTag
         $this->type = AbstractTag::TAG;
     }
 
-    public function getArgs()
-    {
-        // TODO: Implement getArgs() method.
-    }
+//    public function getArgs()
+//    {
+//        // TODO: Implement getArgs() method.
+//    }
 
     public function fart($dictionary) {
         $label = $this->getLabel();
@@ -49,4 +49,5 @@ class TemplateTag extends AbstractTag
     {
         return $this->replacement;
     }
+
 }

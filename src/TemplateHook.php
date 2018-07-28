@@ -25,7 +25,15 @@ class TemplateHook extends AbstractTag
     }
 
     public function fart($dictionary) {
+        $label = $this->getLabel();
+        foreach($dictionary as $find => $replace) {
+            if(strcmp($find,$label) === 0) {
+                $this->replacement = $replace;
+                return true;
+            }
+        }
 
+        return false;
     }
 
     public function getTag() {
@@ -36,4 +44,5 @@ class TemplateHook extends AbstractTag
     {
         return $this->replacement;
     }
+
 }

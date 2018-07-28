@@ -31,6 +31,10 @@ abstract class AbstractTag
         return $this->args;
     }
 
+    public function setReplacement($replacement) {
+        $this->replacement = $replacement;
+    }
+
     abstract function getLabel();
     abstract function setup();
     abstract function fart($dictionary);
