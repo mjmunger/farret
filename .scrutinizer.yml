@@ -7,7 +7,7 @@ build:
         coverage:
             tests:
                 override:
-                    - command: ./phpunit
+                    - command: ./vendor/bin/phpunit
                       coverage:
                         file: coverage.xml   # <- Set this to where we find the coverage data.
                         format: clover
