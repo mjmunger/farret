@@ -3,3 +3,11 @@ build:
     environment:
         php:
             version: 7.2       # Common versions: 5.4, 5.5, 5.6, 7.0, 7.1, 7.2, or hhvm
+    nodes:
+        coverage:
+            tests:
+                override:
+                    - command: ./phpunit
+                      coverage:
+                        file: coverage.xml   # <- Set this to where we find the coverage data.
+                        format: clover

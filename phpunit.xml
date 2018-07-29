@@ -26,6 +26,7 @@
    </testsuite>
    <logging>
       <log target="./build/logs/coverage" type="coverage-html"/>
+      <log target="coverage.xml" type="coverage-clover"/>
    </logging>
    <filter>
       <whitelist processUncoveredFilesFromWhitelist="true">

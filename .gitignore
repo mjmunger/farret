@@ -4,3 +4,4 @@ phpunit
 vendor
 .idea/
 .php_cs.cache
+build/
