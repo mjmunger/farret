@@ -25,7 +25,7 @@
       <directory suffix="Test.php">tests/unit</directory>
    </testsuite>
    <logging>
-      <log target="./build/logs/coverage.txt" type="coverage-text"/>
+      <log target="./build/logs/coverage" type="coverage-html"/>
    </logging>
    <filter>
       <whitelist processUncoveredFilesFromWhitelist="true">

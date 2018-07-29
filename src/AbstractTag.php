@@ -16,6 +16,7 @@ abstract class AbstractTag
     protected $tag;
     protected $args = [];
     protected $replacement = null;
+    protected $this = null;
 
     const TAG  = 0;
     const HOOK = 1;
@@ -35,9 +36,9 @@ abstract class AbstractTag
         $this->replacement = $replacement;
     }
 
-    abstract function getLabel();
-    abstract function setup();
-    abstract function fart($dictionary);
-    abstract function getTag();
-    abstract function getReplacement();
+    abstract public function getLabel();
+    abstract public function setup();
+    abstract public function fart($dictionary);
+    abstract public function getTag();
+    abstract public function getReplacement();
 }

@@ -1,4 +1,9 @@
 # farret
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/mjmunger/farret/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/mjmunger/farret/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/mjmunger/farret/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/mjmunger/farret/?branch=master)
+[![Build Status](https://scrutinizer-ci.com/g/mjmunger/farret/badges/build.png?b=master)](https://scrutinizer-ci.com/g/mjmunger/farret/build-status/master)
+[![Code Intelligence Status](https://scrutinizer-ci.com/g/mjmunger/farret/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
+
 Find And Recrusively Replace Email Templates
 
 ## Installation
