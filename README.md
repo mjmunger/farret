@@ -8,7 +8,7 @@ Find And Recrusively Replace Email Templates
 
 ## Installation
 
-`composer require hphio/farret`
+`composer require hphio/farret dev-master`
 
 ## Requirements
 
