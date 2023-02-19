@@ -24,11 +24,6 @@ class TemplateTag extends AbstractTag
         $this->type = AbstractTag::TAG;
     }
 
-//    public function getArgs()
-//    {
-//        // TODO: Implement getArgs() method.
-//    }
-
     public function fart($dictionary) {
         $label = $this->getLabel();
         foreach($dictionary as $find => $replace) {

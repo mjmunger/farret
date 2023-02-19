@@ -13,22 +13,22 @@ use \Exception;
 
 class Notif
 {
-    private $tagPattern       = '/\{{2} {0,2}([A-Z]+) {0,2}\}{2}/';
-    private $hookPattern      = '/(?:{\%\s{0,})([A-Z]+)\s{0,}((\|(?:{{){0,1}[A-Za-z0-9-]+(?:}}){0,1}\s{0,}){0,})(?:\%})/';
+    private $tagPattern = '/\{{2} {0,2}([A-Z]+) {0,2}\}{2}/';
+    private $hookPattern = '/(?:{\%\s{0,})([A-Z]+)\s{0,}((\|(?:{{){0,1}[A-Za-z0-9-]+(?:}}){0,1}\s{0,}){0,})(?:\%})/';
 
     public $templateDirectory = null;
-    public $template          = null;
-    public $fromName          = null;
-    public $fromAddress       = null;
-    public $subjectTemplate   = null;
-    public $body              = null;
+    public $template = null;
+    public $fromName = null;
+    public $fromAddress = null;
+    public $subjectTemplate = null;
+    public $body = null;
 
-    public $to                = [];
-    public $cc                = [];
-    public $bcc               = [];
-    public $fartDictionary    = [];
+    public $to = [];
+    public $cc = [];
+    public $bcc = [];
+    public $fartDictionary = [];
 
-    public $hooks             = [];
+    public $hooks = [];
 
     public function __construct()
     {
@@ -37,19 +37,23 @@ class Notif
 
     }
 
-    public function setBody($body) {
+    public function setBody($body)
+    {
         $this->body = $body;
     }
 
-    public function getBody() {
+    public function getBody()
+    {
         return $this->body;
     }
 
-    public function setTemplate($template) {
+    public function setTemplate($template)
+    {
         $this->template = $template;
     }
 
-    public function getTemplate() {
+    public function getTemplate()
+    {
         return $this->template;
     }
 
@@ -76,7 +80,7 @@ class Notif
         if (file_exists($this->templateDirectory) === false) {
             throw new Exception("Template directory not set!");
         }
-        if (file_exists($targetTemplate)          === false) {
+        if (file_exists($targetTemplate) === false) {
             throw new Exception("Requested template does not exist in $targetTemplate");
         }
 
@@ -153,7 +157,7 @@ class Notif
         $TagFactory = new TagFactory();
         $buffer = [];
 
-        foreach($matches[0] as $match) {
+        foreach ($matches[0] as $match) {
             $tag = $TagFactory->getTag($match);
             $buffer[] = $tag;
         }
@@ -194,7 +198,7 @@ class Notif
 
             $tag->fart($this->fartDictionary);
 
-            if(strpos($body, $tag->getTag()) === false) {
+            if (!str_contains($body, $tag->getTag())) {
                 // @codeCoverageIgnoreStart
                 continue;
                 // @codeCoverageIgnoreEnd
@@ -218,6 +222,7 @@ class Notif
 
     public function render()
     {
+        $this->verifyTags();
         $this->body = $this->doFart($this->template, $this->getTemplateTags());
         $this->body = $this->renderAllHooks($this->body);
     }
@@ -229,12 +234,13 @@ class Notif
      *
      */
 
-    public function renderAllHooks($body) {
+    public function renderAllHooks($body)
+    {
         $hooks = $this->getHooks($body);
         $TagFactory = new TagFactory();
         $tags = [];
 
-        foreach($hooks as $hook) {
+        foreach ($hooks as $hook) {
             $Tag = $TagFactory->getTag($hook);
             $Tag->setReplacement($this->renderHook($hook));
             $body = str_replace($hook, $Tag->getReplacement(), $body);
@@ -270,7 +276,7 @@ class Notif
 
         //2. Lookup the callback in the hooks dictionary.
 
-        if(isset($this->hooks[$action]) === false) {
+        if (isset($this->hooks[$action]) === false) {
             throw new Exception('The callback you requested is not registered in the notification hooks.');
         }
 
@@ -304,19 +310,55 @@ class Notif
         return $this->getDate(["Y"]);
     }
 
-    public function getArgs($hook) {
+    public function getArgs($hook)
+    {
         $Factory = new TagFactory();
         $Tag = $Factory->getTag($hook);
         return $Tag->getArgs();
     }
 
-    public function hash($args) {
+    public function hash($args)
+    {
         $buffer = '';
-        for($x = 0; $x < count($args); $x++ ) {
-            $buffer = md5($buffer.$args[$x]);
+        for ($x = 0; $x < count($args); $x++) {
+            $buffer = md5($buffer . $args[$x]);
         }
 
         return $buffer;
+    }
+
+    /**
+     * Verify that every tag present in the template has a corresponding fart.
+     * @return void
+     */
+    public function verifyTags(): void
+    {
+        $tags = [];
+        $dictionaryEntries = array_keys($this->fartDictionary);
+        $hookEntries = array_keys($this->hooks);
+
+        $entries = array_merge($dictionaryEntries, $hookEntries);
+
+        foreach ($this->getTemplateTags() as $tag) {
+            $tags[] = $tag->getLabel();
+        }
+
+        $diffs = array_diff($tags, $entries);
+
+        $missingTags = implode(", ", array_map([$this, 'wrapBrackets'], $diffs));
+
+        var_dump($dictionaryEntries, $tags, $diffs);
+        if (count($diffs) > 0) {
+            throw new Exception(
+                sprintf("Cannot send email. Not all tags have been rendered. You must render: %s.", $missingTags),
+                500
+            );
+        }
+    }
+
+    private function wrapBrackets($diff): string
+    {
+        return sprintf("{{%s}}", $diff);
     }
 
 }
