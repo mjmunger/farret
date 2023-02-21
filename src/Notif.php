@@ -347,7 +347,6 @@ class Notif
 
         $missingTags = implode(", ", array_map([$this, 'wrapBrackets'], $diffs));
 
-        var_dump($dictionaryEntries, $tags, $diffs);
         if (count($diffs) > 0) {
             throw new Exception(
                 sprintf("Cannot send email. Not all tags have been rendered. You must render: %s.", $missingTags),
